@@ -41,6 +41,8 @@ app.get("/", (req, res) => {
     <body>
       <h2>Last 10 Lines (Live)</h2>
       <pre id="logBox"></pre>
+      <input id="mess" type="text" placeholder="Type here..." style="width: 100%; padding: 10px; box-sizing: border-box;"></input>
+      <input id="send" type="button" value="Send" style="padding: 10px; margin-top: 5px;"></input>
       <script>
         const socket = io({ transports: ["websocket"] });
         const logBox = document.getElementById("logBox");
@@ -54,7 +56,22 @@ app.get("/", (req, res) => {
           const lines = logBox.textContent.trim().split("\\n");
           if (lines.length > 10) {
             logBox.textContent = lines.slice(-10).join("\\n") + "\\n";
+
           }
+          // socket.on("log", (logline) => {
+          // logBox.textContent += logline + "\\n";
+          // const lines = logBox.textContent.trim().split("\\n");
+          // if (lines.length > 10) {
+          //   logBox.textContent = lines.slice(-10).join("\\n") + "\\n";
+
+          // }
+          const btn=document.getElementById("send");
+          btn.onclick=function(){
+            const mess=document.getElementById("mess").value;
+            socket.emit("log", mess);
+            document.getElementById("mess").value="";
+          }
+        
         });
       </script>
     </body>
@@ -70,11 +87,18 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("❌ Client disconnected:", socket.id);
   });
+  socket.on("log", (line) => {
+    const now = new Date().toLocaleString();
+    const logLine = `Client ${socket.id} says: ${line} at ${now}`;
+    // saveLine(logLine);
+    fs.appendFileSync(logFile, logLine + "\n");
+    
+  });
 });
 
 // --- Dummy log writer (simulating app logs) ---
 setInterval(() => {
-  const now = new Date().toISOString();
+  const now = new Date().toLocaleString();
   const line = `new data: ${now}`;
   fs.appendFileSync(logFile, line + "\n");
 }, 1000);
